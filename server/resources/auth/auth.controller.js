@@ -1,13 +1,13 @@
 import { connect } from 'getstream';
-import bcrypt from 'bcrypt';
-import StreamChat from 'stream-chat';
+import bcrypt from 'bcrypt'
+import { StreamChat } from 'stream-chat';
 import crypto from 'crypto';
 
 const api_key = process.env.STREAM_API_KEY;
 const api_secret = process.env.STREAM_API_SECRET;
 const app_id = process.env.STREAM_APP_ID;
 
-export const login = async (req, res) => {
+export const signup = async (req, res) => {
   try {
     const { fullName, username, password, phoneNumber } = req.body;
 
@@ -19,20 +19,22 @@ export const login = async (req, res) => {
 
     const token = serverClient.createUserToken(userId);
 
-    res.status(200).json({
+    return res.status(200).json({
       token,
-      fullname,
+      fullName,
       username,
       userId,
       hash,
       phoneNumber
-    })
-  } catch (error) {
-    res.status(500).json(error);
-  }
-}
+    });
 
-export const signup = async (req, res) => {
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({ message: error });
+  }
+};
+
+export const login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -42,22 +44,22 @@ export const signup = async (req, res) => {
 
     const { users } = await client.queryUsers({ name: username });
 
-    if (!users.length) return res.status(409).send('Invalid credentials')
+    if (!users.length) return res.status(409).json({ message: 'Invalid credentials' });
 
     const success = await bcrypt.compare(password, users[0].hashedPassword);
 
     const token = serverClient.createUserToken(users[0].id);
 
-    if (success) res.status(200).json({
+    if (success) return res.status(200).json({
       token,
       fullName: users[0].fullName,
-      username: users[0].username,
-      userId: users[0].userId,
-    })
+      username,
+      userId: users[0].id
+    });
 
-    return res.status(409).send('Invalid credentials')
-
+    return res.status(409).json({ message: 'Invalid credentials' });
   } catch (error) {
-    res.status(500).json(error);
+    console.log(error)
+    return res.status(500).json({ message: error });
   }
-}
+};
